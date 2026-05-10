@@ -75,4 +75,49 @@ with col1:
     fig3d.add_trace(go.Scatter3d(x=[0], y=[cg_y_rot], z=[cg_z_rot], mode='markers', 
                                  marker=dict(size=10, color='red'), name='System CG'))
 
-    fig3d.update_layout(height=500, scene=dict(aspectmode='data'), margin=dict(l=0,r=0,b=0
+    fig3d.update_layout(height=500, scene=dict(aspectmode='data'), margin=dict(l=0,r=0,b=0,t=0))
+    st.plotly_chart(fig3d, use_container_width=True)
+
+with col2:
+    st.subheader("📐 2D Side Profile")
+    # 2D 단면 단순화 계산
+    rad = np.radians(tilt_angle)
+    # 패널 선
+    p_line_z = [0, th * np.cos(rad)]
+    p_line_y = [0, -th * np.sin(rad)]
+    
+    fig2d = go.Figure()
+    # 바닥 수평선 (기준선)
+    fig2d.add_shape(type="line", x0=-500, y0=-f_h, x1=500, y1=-f_h, line=dict(color="Black", width=2))
+    # TV 패널 단면
+    fig2d.add_trace(go.Scatter(x=p_line_y, y=p_line_z, mode='lines', line=dict(width=8, color='royalblue'), name='TV'))
+    # CG 포인트 및 중력선
+    curr_cg_y = -cg_h * np.sin(rad)
+    curr_cg_z = cg_h * np.cos(rad)
+    fig2d.add_trace(go.Scatter(x=[curr_cg_y], y=[curr_cg_z], mode='markers', marker=dict(size=12, color='red'), name='CG'))
+    fig2d.add_trace(go.Scatter(x=[curr_cg_y, curr_cg_y], y=[curr_cg_z, -f_h], mode='lines', 
+                               line=dict(dash='dash', color='red'), name='Gravity Line'))
+    
+    fig2d.update_layout(height=500, xaxis=dict(range=[-600, 600]), yaxis=dict(range=[-100, 1300]))
+    st.plotly_chart(fig2d, use_container_width=True)
+
+# --- 5. 결과 및 로직 (하단 레이아웃) ---
+st.markdown("---")
+res_col1, res_col2 = st.columns([1, 2])
+
+# 임계 각도 계산
+critical_angle = np.degrees(np.arctan(pivot_dist / cg_h))
+
+with res_col1:
+    st.subheader("🏁 Result")
+    if tilt_angle < critical_angle:
+        st.success(f"✅ 안정 (Stable)\n\nMargin: {critical_angle - tilt_angle:.2f}°")
+    else:
+        st.error(f"🛑 전도 (Tipped)\n\nOver: {tilt_angle - critical_angle:.2f}°")
+    st.metric("한계 각도 (Critical)", f"{critical_angle:.2f}°")
+
+with res_col2:
+    st.subheader("🧮 Engineering Logic")
+    st.latex(r"\theta_{critical} = \arctan\left(\frac{d_{pivot}}{h_{cg}}\right)")
+    st.write(f"현재 입력값: $d_{{pivot}} = {pivot_dist}mm$, $h_{{cg}} = {cg_h}mm$")
+    st.latex(f"\\arctan\\left(\\frac{{{pivot_dist}}}{{{cg_h}}}\\right) = {critical_angle:.2f}^\circ")
